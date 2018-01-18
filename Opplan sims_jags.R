@@ -1,17 +1,19 @@
 # Define mean survival, transitions, recapture, as well as number of occasions, states, observations and released individuals
+# A: Glacier/Moraine (best habitat above drainage control), B:Crystal (poor habitat above drainage control), C: Moose (below drainage control)
 phiA <- 0.75
 phiB <- 0.75
 phiC <- 0.75
-psiAB <- 0.05
+psiAB <- 0.2
 psiAC <- 0.05
-psiBA <- 0.05
+psiBA <- 0.5
 psiBC <- 0.05
-psiCA <- 0.5
-psiCB <- 0.5
+psiCA <- 0.05
+psiCB <- 0.05
 pA <- 0.20
 pB <- 0.20
-pC <- 0.20
+pC <- 0.10
 n.occasions <- 5
+#Fall 18, Spring and Fall 19, Spring and Fall 20
 n.states <- 4
 n.obs <- 4
 marked <- matrix(NA, ncol = n.states, nrow = n.occasions)
@@ -120,121 +122,6 @@ f <- apply(CH, 1, get.first)
 rCH <- CH  # Recoded CH
 rCH[rCH==0] <- 4
 
-
-# 9.6.3. Analysis of the model
-# Specify model in BUGS language
-cat(file = "ms3-multinomlogit.jags", "
-    model {
-    
-    # -------------------------------------------------
-    # Parameters:
-    # phiA: survival probability at site A
-    # phiB: survival probability at site B
-    # phiC: survival probability at site C
-    # psiAB: movement probability from site A to site B
-    # psiAC: movement probability from site A to site C
-    # psiBA: movement probability from site B to site A
-    # psiBC: movement probability from site B to site C
-    # psiCA: movement probability from site C to site A
-    # psiCB: movement probability from site C to site B
-    # pA: recapture probability at site A
-    # pB: recapture probability at site B
-    # pC: recapture probability at site C 
-    # -------------------------------------------------
-    # States (S):
-    # 1 alive at A
-    # 2 alive at B
-    # 3 alive at C
-    # 4 dead
-    # Observations (O):
-    # 1 seen at A 
-    # 2 seen at B
-    # 3 seen at C
-    # 4 not seen
-    # -------------------------------------------------
-    
-    # Priors and constraints
-    # Survival and recapture: uniform
-    phiA ~ dunif(0, 1)
-    phiB ~ dunif(0, 1)
-    phiC ~ dunif(0, 1)
-    pA ~ dunif(0, 1)
-    pB ~ dunif(0, 1)
-    pC ~ dunif(0, 1)
-    
-    # Transitions: multinomial logit
-    # Normal priors on logit of all but one transition probas
-    for (i in 1:2){
-    lpsiA[i] ~ dnorm(0, 0.001)
-    lpsiB[i] ~ dnorm(0, 0.001)
-    lpsiC[i] ~ dnorm(0, 0.001)
-    }
-    # Constrain the transitions such that their sum is < 1
-    for (i in 1:2){
-    psiA[i] <- exp(lpsiA[i]) / (1 + exp(lpsiA[1]) + exp(lpsiA[2]))
-    psiB[i] <- exp(lpsiB[i]) / (1 + exp(lpsiB[1]) + exp(lpsiB[2]))
-    psiC[i] <- exp(lpsiC[i]) / (1 + exp(lpsiC[1]) + exp(lpsiC[2]))
-    }
-    # Calculate the last transition probability
-    psiA[3] <- 1-psiA[1]-psiA[2]
-    psiB[3] <- 1-psiB[1]-psiB[2]
-    psiC[3] <- 1-psiC[1]-psiC[2]
-    
-    # Define state-transition and observation matrices 	
-    for (i in 1:nind){
-    # Define probabilities of state S(t+1) given S(t)
-    for (t in f[i]:(n.occasions-1)){
-    ps[1,i,t,1] <- phiA * psiA[1]
-    ps[1,i,t,2] <- phiA * psiA[2]
-    ps[1,i,t,3] <- phiA * psiA[3]
-    ps[1,i,t,4] <- 1-phiA
-    ps[2,i,t,1] <- phiB * psiB[1]
-    ps[2,i,t,2] <- phiB * psiB[2]
-    ps[2,i,t,3] <- phiB * psiB[3]
-    ps[2,i,t,4] <- 1-phiB
-    ps[3,i,t,1] <- phiC * psiC[1]
-    ps[3,i,t,2] <- phiC * psiC[2]
-    ps[3,i,t,3] <- phiC * psiC[3]
-    ps[3,i,t,4] <- 1-phiC
-    ps[4,i,t,1] <- 0
-    ps[4,i,t,2] <- 0
-    ps[4,i,t,3] <- 0
-    ps[4,i,t,4] <- 1
-    
-    # Define probabilities of O(t) given S(t)
-    po[1,i,t,1] <- pA
-    po[1,i,t,2] <- 0
-    po[1,i,t,3] <- 0
-    po[1,i,t,4] <- 1-pA
-    po[2,i,t,1] <- 0
-    po[2,i,t,2] <- pB
-    po[2,i,t,3] <- 0
-    po[2,i,t,4] <- 1-pB
-    po[3,i,t,1] <- 0
-    po[3,i,t,2] <- 0
-    po[3,i,t,3] <- pC
-    po[3,i,t,4] <- 1-pC
-    po[4,i,t,1] <- 0
-    po[4,i,t,2] <- 0
-    po[4,i,t,3] <- 0
-    po[4,i,t,4] <- 1
-    } #t
-    } #i
-    
-    # Likelihood 
-    for (i in 1:nind){
-    # Define latent state at first capture   
-    z[i,f[i]] <- y[i,f[i]]
-    for (t in (f[i]+1):n.occasions){
-    # State process: draw S(t) given S(t-1)
-    z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
-    # Observation process: draw O(t) given S(t)
-    y[i,t] ~ dcat(po[z[i,t], i, t-1,])
-    } #t
-    } #i
-    }
-    ")
-
 # Function to create known latent states z
 known.state.ms <- function(ms, notseen){
   # notseen: label for ‘not seen’
@@ -281,12 +168,12 @@ inits <- function(){list(phiA = runif(1, 0, 1),
 parameters <- c("phiA", "phiB", "phiC", "psiA", "psiB", "psiC", "pA", "pB", "pC")
 
 # MCMC settings
-ni <- 5000
-nt <- 3
-nb <- 2000
+ni <- 10000
+nt <- 4
+nb <- 5000
 nc <- 3
 
-# Call JAGS from R (BRT 56 min)
+# Call JAGS from R
 ms3 <- jagsUI::jags(jags.data, inits, parameters, "ms3-multinomlogit.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, parallel = TRUE)
 
 print(ms3, digits = 3)
