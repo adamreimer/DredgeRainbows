@@ -4,20 +4,22 @@ phiB <- 0.75
 phiC <- 0.75
 psiAB <- 0.05
 psiAC <- 0.05
-psiBA <- 0.25
+psiBA <- 0.05
 psiBC <- 0.05
 psiCA <- 0.5
 psiCB <- 0.5
-pA <- 0.75
-pB <- 0.75
-pC <- 0.75
-n.occasions <- 3
+pA <- 0.20
+pB <- 0.20
+pC <- 0.20
+n.occasions <- 5
 n.states <- 4
 n.obs <- 4
 marked <- matrix(NA, ncol = n.states, nrow = n.occasions)
-marked[,1] <- rep(500, n.occasions)  
-marked[,2] <- rep(500, n.occasions)
-marked[,3] <- rep(500, n.occasions)
+# marked[,1] <- rep(500, n.occasions)
+# marked[,2] <- rep(500, n.occasions)
+# marked[,3] <- rep(500, n.occasions)
+# marked[,1] <- marked[,2] <- marked[,3] <- c(500, rep(0, n.occasions - 1))
+marked[,1] <- marked[,2] <- marked[,3] <- c(500, 500, 0, 500, 0)
 marked[,4] <- rep(0, n.occasions)
 
 # Define matrices with survival, transition and recapture probabilities
@@ -85,12 +87,10 @@ simul.ms <- function(PSI.STATE, PSI.OBS, marked, unobservable = NA){
   CH[is.na(CH)] <- 0
   CH[CH==dim(PSI.STATE)[1]] <- 0
   CH[CH==unobservable] <- 0
-  id <- numeric(0)
-  for (i in 1:dim(CH)[1]){
-    z <- min(which(CH[i,]!=0))
-    ifelse(z==dim(CH)[2], id <- c(id,i), id <- c(id))
-  }
-  return(list(CH=CH[-id,], CH.TRUE=CH.TRUE[-id,]))
+  id <- rep(NA, dim(CH)[1])
+  z <- apply(CH, 1, function(x) min(which(x != 0)))
+  id <- (z != dim(CH)[2])
+  return(list(CH=CH[id,], CH.TRUE=CH.TRUE[id,]))
   # CH: capture histories to be used
   # CH.TRUE: capture histories with perfect observation
 }
@@ -98,7 +98,6 @@ simul.ms <- function(PSI.STATE, PSI.OBS, marked, unobservable = NA){
 # Execute simulation function
 sim <- simul.ms(PSI.STATE, PSI.OBS, marked)
 CH <- sim$CH
-unique(CH)
 
 ###function to create capture history character strings (need for input to RMARK)
 pasty<-function(x){
@@ -245,9 +244,9 @@ known.state.ms <- function(ms, notseen){
     m <- min(which(!is.na(state[i,])))
     state[i,m] <- NA
 }
-
-  }
   return(state)
+}
+
 # Function to create initial values for unknown z
 ms.init.z <- function(ch, f){
   for (i in 1:dim(ch)[1]){ch[i,1:f[i]] <- NA}
@@ -282,12 +281,12 @@ inits <- function(){list(phiA = runif(1, 0, 1),
 parameters <- c("phiA", "phiB", "phiC", "psiA", "psiB", "psiC", "pA", "pB", "pC")
 
 # MCMC settings
-ni <- 50000
-nt <- 6
-nb <- 20000
+ni <- 5000
+nt <- 3
+nb <- 2000
 nc <- 3
 
 # Call JAGS from R (BRT 56 min)
-ms3 <- jagsUI::jags(jags.data, inits, parameters, "ms3-multinomlogit.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb)
+ms3 <- jagsUI::jags(jags.data, inits, parameters, "ms3-multinomlogit.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, parallel = TRUE)
 
 print(ms3, digits = 3)
