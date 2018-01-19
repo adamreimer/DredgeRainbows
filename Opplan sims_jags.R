@@ -21,8 +21,9 @@ marked <- matrix(NA, ncol = n.states, nrow = n.occasions)
 # marked[,2] <- rep(500, n.occasions)
 # marked[,3] <- rep(500, n.occasions)
 # marked[,1] <- marked[,2] <- marked[,3] <- c(500, rep(0, n.occasions - 1))
-marked[,1] <- marked[,2] <- marked[,3] <- c(500, 500, 0, 500, 0)
-marked[,4] <- rep(0, n.occasions)
+marked[,1] <- c(1000, 1000, 0, 1000, 0)
+marked[,2] <- c(500, 500, 0, 500, 0)
+marked[,3] <- marked[,4] <- rep(0, n.occasions)
 
 # Define matrices with survival, transition and recapture probabilities
 # These are 4-dimensional matrices, with 
@@ -169,7 +170,7 @@ parameters <- c("phiA", "phiB", "phiC", "psiA", "psiB", "psiC", "pA", "pB", "pC"
 
 # MCMC settings
 ni <- 10000
-nt <- 4
+nt <- 2
 nb <- 5000
 nc <- 3
 
