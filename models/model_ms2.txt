@@ -1,0 +1,77 @@
+# 9.2.3. Analysis of the model
+# Specify model in BUGS language
+model {
+
+# -------------------------------------------------
+# Parameters:
+# phiA: survival probability at site A
+# phiB: survival probability at site B
+# psiAB: movement probability from site A to site B
+# psiBA: movement probability from site B to site A
+# pA: recapture probability at site A
+# pB: recapture probability at site B
+# -------------------------------------------------
+# States (S):
+# 1 alive at A
+# 2 alive at B
+# 3 dead
+# Observations (O):  
+# 1 seen at A 
+# 2 seen at B
+# 3 not seen
+# -------------------------------------------------
+
+# Priors and constraints
+for (t in 1:(n.occasions-1)){
+   phiA[t] <- mean.phi[1]
+   phiB[t] <- mean.phi[2]
+   psiAB[t] <- mean.psi[1]
+   psiBA[t] <- mean.psi[2]
+   pA[t] <- mean.p[1]
+   pB[t] <- mean.p[2]
+   }
+for (u in 1:2){
+   mean.phi[u] ~ dunif(0, 1)    # Priors for mean state-spec. survival
+   mean.psi[u] ~ dunif(0, 1)    # Priors for mean transitions
+   mean.p[u] ~ dunif(0, 1)      # Priors for mean state-spec. recapture
+   }
+
+# Define state-transition and observation matrices
+for (i in 1:nind){  
+   # Define probabilities of state S(t+1) given S(t)
+   for (t in f[i]:(n.occasions-1)){
+      ps[1,i,t,1] <- phiA[t] * (1-psiAB[t])
+      ps[1,i,t,2] <- phiA[t] * psiAB[t]
+      ps[1,i,t,3] <- 1-phiA[t]
+      ps[2,i,t,1] <- phiB[t] * psiBA[t]
+      ps[2,i,t,2] <- phiB[t] * (1-psiBA[t])
+      ps[2,i,t,3] <- 1-phiB[t]
+      ps[3,i,t,1] <- 0
+      ps[3,i,t,2] <- 0
+      ps[3,i,t,3] <- 1
+      
+      # Define probabilities of O(t) given S(t)
+      po[1,i,t,1] <- pA[t]
+      po[1,i,t,2] <- 0
+      po[1,i,t,3] <- 1-pA[t]
+      po[2,i,t,1] <- 0
+      po[2,i,t,2] <- pB[t]
+      po[2,i,t,3] <- 1-pB[t]
+      po[3,i,t,1] <- 0
+      po[3,i,t,2] <- 0
+      po[3,i,t,3] <- 1
+      } #t
+   } #i
+
+# Likelihood 
+for (i in 1:nind){
+   # Define latent state at first capture
+   z[i,f[i]] <- y[i,f[i]]
+   for (t in (f[i]+1):n.occasions){
+      # State process: draw S(t) given S(t-1)
+      z[i,t] ~ dcat(ps[z[i,t-1], i, t-1,])
+      # Observation process: draw O(t) given S(t)
+      y[i,t] ~ dcat(po[z[i,t], i, t-1,])
+      } #t
+   } #i
+}

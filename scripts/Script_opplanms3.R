@@ -12,8 +12,7 @@ psiCB <- 0.05
 pA <- 0.20
 pB <- 0.20
 pC <- 0.10
-n.occasions <- 5
-#Fall 18, Spring and Fall 19, Spring and Fall 20
+n.occasions <- 5 #Fall 18, Spring and Fall 19, Spring and Fall 20
 n.states <- 4
 n.obs <- 4
 marked <- matrix(NA, ncol = n.states, nrow = n.occasions)
@@ -148,7 +147,8 @@ ms.init.z <- function(ch, f){
 
 # Bundle data
 jags.data <- list(y = rCH, 
-                  f = f, n.occasions = dim(rCH)[2], 
+                  f = f, 
+                  n.occasions = dim(rCH)[2], 
                   nind = dim(rCH)[1], 
                   z = known.state.ms(rCH, 4))
 
@@ -169,12 +169,19 @@ inits <- function(){list(phiA = runif(1, 0, 1),
 parameters <- c("phiA", "phiB", "phiC", "psiA", "psiB", "psiC", "pA", "pB", "pC")
 
 # MCMC settings
-ni <- 10000
+ni <- 2000
 nt <- 2
-nb <- 5000
+nb <- 1000
 nc <- 3
 
 # Call JAGS from R
-ms3 <- jagsUI::jags(jags.data, inits, parameters, "ms3-multinomlogit.jags", n.chains = nc, n.thin = nt, n.iter = ni, n.burnin = nb, parallel = TRUE)
+ms3 <- jagsUI::jags(jags.data, 
+                    inits, parameters, 
+                    ".\\models\\ms3-multinomlogit.txt", 
+                    n.chains = nc, 
+                    n.thin = nt, 
+                    n.iter = ni, 
+                    n.burnin = nb, 
+                    parallel = TRUE)
 
 print(ms3, digits = 3)
