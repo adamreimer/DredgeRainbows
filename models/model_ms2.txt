@@ -23,15 +23,14 @@ model {
 
 # Priors and constraints
 for (t in 1:(n.occasions-1)){
-   phiA[t] <- mean.phi[1]
-   phiB[t] <- mean.phi[2]
+   phiA[t] ~ dunif(0, 1)    # Priors for mean state-spec. survival
+   phiB[t] ~ dunif(0, 1)    # Priors for mean state-spec. survival
    psiAB[t] <- mean.psi[1]
    psiBA[t] <- mean.psi[2]
    pA[t] <- mean.p[1]
    pB[t] <- mean.p[2]
    }
 for (u in 1:2){
-   mean.phi[u] ~ dunif(0, 1)    # Priors for mean state-spec. survival
    mean.psi[u] ~ dunif(0, 1)    # Priors for mean transitions
    mean.p[u] ~ dunif(0, 1)      # Priors for mean state-spec. recapture
    }
