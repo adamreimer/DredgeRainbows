@@ -79,7 +79,7 @@ nc <- 3
 
 #vary phiAB
 #sim_dat <- replicate(25, jags_data(PSI.STATE, PSI.OBS, marked), simplify = FALSE) 
-#phiA <- c(.4, .9, .75, .9), phiB <- phiA, psiAB <- 0.05, psiBA <- 0.001, pA <- 0.60, pB <- pA
+#phiA <- c(.4, .9, .75, .9), phiB <- phiA, psiAB <- 0.05, psiBA <- 0.001, pA <- 0.60, pB <- pA /3
 
 knitr::kable(table(paste0(sim_dat[[1]]$y[,1], sim_dat[[1]]$y[,2], sim_dat[[1]]$y[,3], sim_dat[[1]]$y[,4], sim_dat[[1]]$y[,5])))
 sim_post <- 
